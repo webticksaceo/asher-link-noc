@@ -1,4 +1,4 @@
-import type { Db, Collection, Document, MongoClient, OptionalUnlessRequiredId } from "mongodb";
+import type { Db, Collection, Document, OptionalUnlessRequiredId } from "mongodb";
 import {
   activeSessions,
   ads,
