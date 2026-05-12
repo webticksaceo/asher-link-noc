@@ -82,13 +82,15 @@
     "wrangler": "4.21.x"
   },
   "scripts": {
-    "build": "tsc -b && vite build",
-    "cf-typegen": "wrangler types",
-    "check": "tsc && vite build && wrangler deploy --dry-run",
-    "deploy": "wrangler deploy",
-    "dev": "vite",
+    "dev": "vite dev",
+    "build": "vite build",
+    "build:dev": "vite build",
+    "preview": "vite preview",
     "lint": "eslint .",
-    "preview": "npm run build && vite preview"
+    "format": "prettier --write .",
+    "cf-typegen": "wrangler types",
+    "check": "vite build && wrangler deploy --dry-run",
+    "deploy": "wrangler deploy"
   },
   "type": "module"
 }
