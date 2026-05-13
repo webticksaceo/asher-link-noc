@@ -21,6 +21,11 @@ dist-ssr
 functions/
 .dev.vars
 
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
 
 # Editor directories and files
 .vscode/*
