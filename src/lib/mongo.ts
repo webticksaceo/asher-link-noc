@@ -43,8 +43,12 @@ function getEnvBindings(env: unknown): EnvBindings | undefined {
 }
 
 function getProcessEnv(): NodeJS.ProcessEnv | undefined {
-  if (typeof process === "undefined") return undefined;
-  return process.env;
+  try {
+    if (typeof process === "undefined") return undefined;
+    return process.env;
+  } catch {
+    return undefined;
+  }
 }
 
 function getMongoUri(env?: EnvBindings): string {
@@ -59,13 +63,19 @@ function getDbName(env?: EnvBindings): string {
 export async function getDb(env?: unknown): Promise<Db> {
   const bindings = getEnvBindings(env);
   const uri = getMongoUri(bindings);
-  const { MongoClient: MongoClientRuntime } = await import("mongodb");
+  
+  try {
+    const { MongoClient: MongoClientRuntime } = await import("mongodb");
 
-  if (!globalThis.__mongodbClientPromise) {
-    globalThis.__mongodbClientPromise = new MongoClientRuntime(uri).connect();
+    if (!globalThis.__mongodbClientPromise) {
+      globalThis.__mongodbClientPromise = new MongoClientRuntime(uri).connect();
+    }
+    const client = await globalThis.__mongodbClientPromise;
+    return client.db(getDbName(bindings));
+  } catch (error) {
+    // MongoDB library not available (common in edge environments like Cloudflare Workers)
+    throw new Error("MongoDB library not available", { cause: error });
   }
-  const client = await globalThis.__mongodbClientPromise;
-  return client.db(getDbName(bindings));
 }
 
 async function ensureCollectionSeeded<T>(db: Db, name: string, docs: T[]) {
@@ -110,7 +120,10 @@ async function tryGetDb(env?: unknown): Promise<Db | null> {
   try {
     return await getDb(env);
   } catch (error) {
-    console.warn("MongoDB unavailable, falling back to mock data:", error);
+    // Silently fall back to mock data - this is expected in edge environments
+    if (typeof console !== "undefined" && process.env.DEBUG_DB) {
+      console.warn("MongoDB unavailable, using mock data");
+    }
     return null;
   }
 }
