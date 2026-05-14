@@ -77,19 +77,20 @@ export default {
           return new Response("Expected Upgrade: websocket", { status: 426 });
         }
         const webSocketPair = new WebSocketPair();
-        const [client, server] = Object.values(webSocketPair);
+        const client = webSocketPair[0];
+        const server = webSocketPair[1];
         server.accept();
         clients.add(server);
         server.addEventListener("close", () => {
           clients.delete(server);
         });
-        server.addEventListener("message", (event) => {
+        server.addEventListener("message", (event: MessageEvent) => {
           // Handle incoming messages if needed
         });
         return new Response(null, {
           status: 101,
           webSocket: client,
-        });
+        } as ResponseInit);
       }
       if (url.pathname.startsWith("/api")) {
         return await handleApiRequest(request, env);

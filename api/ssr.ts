@@ -9,7 +9,7 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
 
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
-    serverEntryPromise = import("@tanstack/react-start/server-entry").then(
+    serverEntryPromise = import("../src/server").then(
       (m) => (m as { default?: ServerEntry }).default ?? (m as unknown as ServerEntry),
     );
   }
@@ -25,7 +25,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Construct the full URL from Vercel request headers
     const protocol = req.headers["x-forwarded-proto"] || "https";
     const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost";
-    const fullUrl = new URL(pathname + url.search, `${protocol}://${host}`);
+    const originalPath =
+      (req.headers["x-vercel-original-path"] as string | undefined) ||
+      (req.headers["x-now-original-path"] as string | undefined) ||
+      pathname;
+    const fullUrl = new URL(originalPath + url.search, `${protocol}://${host}`);
 
     // Get request body if present
     let body: BodyInit | undefined;
