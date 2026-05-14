@@ -11,9 +11,10 @@ Hotspot Hub is an admin dashboard for managing prepaid WiFi infrastructure, adve
 
 ## Key features
 
+- Advertisements dashboard using `advertisements` collection shape.
 - API endpoints for dashboard data and collections.
 - SSR entry managed through `@tanstack/react-start/server-entry`.
-- Cloudflare Wrangler compatibility via `wrangler.json`.
+- Cloudflare Wrangler compatibility via `wrangler.jsonc`.
 
 ## Project structure
 
@@ -33,7 +34,7 @@ Hotspot Hub is an admin dashboard for managing prepaid WiFi infrastructure, adve
 
 2. Run the development server:
    ```bash
-   npm run dev
+   npm run dev -- --host 0.0.0.0
    ```
 
 3. Open the app in your browser at the address shown in the terminal.
@@ -41,7 +42,6 @@ Hotspot Hub is an admin dashboard for managing prepaid WiFi infrastructure, adve
 ## Available scripts
 
 - `npm run dev` — start the Vite development server
-- `npm run wrangler:dev` — start the Cloudflare Workers runtime locally
 - `npm run build` — build the application
 - `npm run build:dev` — build in development mode
 - `npm run preview` — preview the production build
@@ -60,7 +60,7 @@ Hotspot Hub is an admin dashboard for managing prepaid WiFi infrastructure, adve
 - `GET /api/advertisements` — advertisement documents
 - `GET /api/nodes`
 - `GET /api/users`
-- `GET /api/vouchnpm run devers`
+- `GET /api/vouchers`
 - `GET /api/transactions`
 - `GET /api/activeSessions`
 - `GET /api/notifications`

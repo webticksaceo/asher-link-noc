@@ -56,29 +56,15 @@ function getDbName(env?: EnvBindings): string {
   return (env?.MONGODB_DB as string) || getProcessEnv()?.MONGODB_DB || DEFAULT_DB_NAME;
 }
 
-function isNodeRuntime(): boolean {
-  return typeof process !== "undefined" && typeof process.versions?.node === "string";
-}
-
-async function importMongo() {
-  return await new Function("specifier", "return import(specifier);")("mongodb");
-}
-
 export async function getDb(env?: unknown): Promise<Db> {
-  if (!isNodeRuntime()) {
-    throw new Error("MongoDB is unavailable in this runtime.");
-  }
-
   const bindings = getEnvBindings(env);
   const uri = getMongoUri(bindings);
-  const { MongoClient: MongoClientRuntime } = await importMongo();
+  const { MongoClient: MongoClientRuntime } = await import("mongodb");
 
-  const clientPromise: Promise<MongoClient> =
-    globalThis.__mongodbClientPromise ?? new MongoClientRuntime(uri).connect();
-
-  globalThis.__mongodbClientPromise = clientPromise;
-
-  const client = await clientPromise;
+  if (!globalThis.__mongodbClientPromise) {
+    globalThis.__mongodbClientPromise = new MongoClientRuntime(uri).connect();
+  }
+  const client = await globalThis.__mongodbClientPromise;
   return client.db(getDbName(bindings));
 }
 
@@ -120,8 +106,57 @@ async function calculateSessionsHourly(db: Db) {
   await db.collection("sessionsHourly").insertMany(sessionsHourly);
 }
 
+async function tryGetDb(env?: unknown): Promise<Db | null> {
+  try {
+    return await getDb(env);
+  } catch (error) {
+    console.warn("MongoDB unavailable, falling back to mock data:", error);
+    return null;
+  }
+}
+
+function getMockCollection(name: string) {
+  switch (name) {
+    case "nodes":
+      return nodes;
+    case "users":
+      return users;
+    case "vouchers":
+      return vouchers;
+    case "advertisements":
+      return ads;
+    case "transactions":
+      return transactions;
+    case "activeSessions":
+      return activeSessions;
+    case "notifications":
+      return notifications;
+    case "revenue7d":
+      return revenue7d;
+    case "sessionsHourly":
+      return sessionsHourly;
+    case "settings":
+      return settings;
+    default:
+      return [];
+  }
+}
+
+function getMockDashboard() {
+  return {
+    nodes,
+    users,
+    activeSessions,
+    transactions,
+    revenue7d,
+    sessionsHourly,
+  };
+}
+
 export async function ensureDbSeeded(env?: unknown) {
-  const db = await getDb(env);
+  const db = await tryGetDb(env);
+  if (!db) return;
+
   await Promise.all([
     ensureCollectionSeeded(db, "nodes", nodes),
     ensureCollectionSeeded(db, "users", users),
@@ -148,76 +183,31 @@ function jsonResponse(data: unknown, status = 200) {
 export async function handleApiRequest(request: Request, env: unknown): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname.replace(/^\/api\/?/, "").replace(/\/$/, "");
-  const isNode = isNodeRuntime();
-  let db: Db | null = null;
 
-  if (isNode) {
-    try {
-      await ensureDbSeeded(env);
-      db = await getDb(env);
-    } catch (error) {
-      console.warn("MongoDB unavailable, falling back to mock data:", error);
-      db = null;
-    }
+  if (path === "" || path === "status") {
+    return jsonResponse({ status: "ok" });
   }
 
+  const validCollections = new Set([
+    "nodes",
+    "users",
+    "vouchers",
+    "advertisements",
+    "transactions",
+    "activeSessions",
+    "notifications",
+    "revenue7d",
+    "sessionsHourly",
+    "settings",
+  ]);
+  const collectionName = path === "ads" ? "advertisements" : path;
+  if (!validCollections.has(collectionName) && path !== "dashboard") {
+    return jsonResponse({ error: "Not found" }, 404);
+  }
+
+  const db = await tryGetDb(env);
+
   try {
-    if (path === "" || path === "status") {
-      return jsonResponse({ status: "ok" });
-    }
-
-    const validCollections = new Set([
-      "nodes",
-      "users",
-      "vouchers",
-      "advertisements",
-      "transactions",
-      "activeSessions",
-      "notifications",
-      "revenue7d",
-      "sessionsHourly",
-      "settings",
-    ]);
-    const collectionName = path === "ads" ? "advertisements" : path;
-
-    function getMockCollection(name: string) {
-      switch (name) {
-        case "nodes":
-          return nodes;
-        case "users":
-          return users;
-        case "vouchers":
-          return vouchers;
-        case "advertisements":
-          return ads;
-        case "transactions":
-          return transactions;
-        case "activeSessions":
-          return activeSessions;
-        case "notifications":
-          return notifications;
-        case "revenue7d":
-          return revenue7d;
-        case "sessionsHourly":
-          return sessionsHourly;
-        case "settings":
-          return settings;
-        default:
-          return [];
-      }
-    }
-
-    function getMockDashboard() {
-      return {
-        nodes,
-        users,
-        activeSessions,
-        transactions,
-        revenue7d,
-        sessionsHourly,
-      };
-    }
-
     if (path === "dashboard") {
       if (!db) {
         return jsonResponse(getMockDashboard());
@@ -231,10 +221,6 @@ export async function handleApiRequest(request: Request, env: unknown): Promise<
         revenue7d: await db.collection("revenue7d").find().toArray(),
         sessionsHourly: await db.collection("sessionsHourly").find().toArray(),
       });
-    }
-
-    if (!validCollections.has(collectionName)) {
-      return jsonResponse({ error: "Not found" }, 404);
     }
 
     if (!db) {
@@ -284,7 +270,7 @@ export async function handleApiRequest(request: Request, env: unknown): Promise<
 
     if (request.method === "POST" && collectionName === "advertisements") {
       const body = await request.json() as Record<string, any>;
-      body._id = { $oid: Date.now().toString() }; // Simple ID generation
+      body._id = { $oid: Date.now().toString() };
       body.impressions = 0;
       body.daily_count = 0;
       await db.collection(collectionName).insertOne(body);
@@ -296,10 +282,10 @@ export async function handleApiRequest(request: Request, env: unknown): Promise<
 
     if (request.method === "POST" && collectionName === "notifications") {
       const body = await request.json() as Record<string, any>;
-      body.id = Date.now().toString(); // Simple ID generation
+      body.id = Date.now().toString();
       body.sentAt = new Date().toISOString();
-      body.delivered = Math.floor(Math.random() * 1000) + 100; // Mock delivery count
-      body.opened = Math.floor(body.delivered * (0.3 + Math.random() * 0.4)); // Mock open rate 30-70%
+      body.delivered = Math.floor(Math.random() * 1000) + 100;
+      body.opened = Math.floor(body.delivered * (0.3 + Math.random() * 0.4));
       await db.collection(collectionName).insertOne(body);
       broadcast(JSON.stringify({ type: 'update' }));
       return jsonResponse({ success: true }, 201);
@@ -307,12 +293,9 @@ export async function handleApiRequest(request: Request, env: unknown): Promise<
 
     if (request.method === "PUT" && collectionName === "settings") {
       const body = await request.json() as Record<string, any>;
-      const { _id, ...dataToUpdate } = body; // Remove MongoDB's _id to avoid issues
-      
-      // Try to update by id field first
+      const { _id, ...dataToUpdate } = body;
+
       let result = await db.collection(collectionName).updateOne({ id: "main" }, { $set: dataToUpdate });
-      
-      // If no match, try to find any document and update it
       if (result.matchedCount === 0) {
         const existing = await db.collection(collectionName).findOne({});
         if (existing) {
@@ -321,9 +304,8 @@ export async function handleApiRequest(request: Request, env: unknown): Promise<
           await db.collection(collectionName).insertOne({ id: "main", ...dataToUpdate } as any);
         }
       }
-      
       const updated = await db.collection(collectionName).findOne({ id: "main" });
-      broadcast(JSON.stringify({ type: 'update' })); // Notify clients
+      broadcast(JSON.stringify({ type: 'update' }));
       return jsonResponse(updated || { success: true });
     }
 

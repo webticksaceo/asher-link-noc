@@ -1,15 +1,10 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "noc",
-  "main": "./src/server.ts",
-  "compatibility_date": "2025-06-17",
+  "name": "asher-link-noc",
+  "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
-  "observability": {
-    "enabled": true
-  },
-  "upload_source_maps": true,
+  "main": "dist/server/index.js",
   "assets": {
-    "directory": "./dist/client",
-    "not_found_handling": "single-page-application"
+    "directory": "dist/client"
   }
 }

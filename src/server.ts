@@ -1,10 +1,8 @@
-/// <reference path="../worker-configuration.d.ts" />
-
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { handleApiRequest, clients } from "./lib/mongo";
+import { handleApiRequest, broadcast, clients } from "./lib/mongo";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -14,7 +12,6 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
 
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
-    
     serverEntryPromise = import("@tanstack/react-start/server-entry").then(
       (m) => (m as { default?: ServerEntry }).default ?? (m as unknown as ServerEntry),
     );
@@ -80,14 +77,13 @@ export default {
           return new Response("Expected Upgrade: websocket", { status: 426 });
         }
         const webSocketPair = new WebSocketPair();
-        const client = webSocketPair[0];
-        const server = webSocketPair[1];
+        const [client, server] = Object.values(webSocketPair);
         server.accept();
         clients.add(server);
         server.addEventListener("close", () => {
           clients.delete(server);
         });
-        server.addEventListener("message", () => {
+        server.addEventListener("message", (event) => {
           // Handle incoming messages if needed
         });
         return new Response(null, {
