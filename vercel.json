@@ -2,11 +2,15 @@
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
   "framework": "vite",
-  "outputDirectory": "dist/client",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/assets/:path*",
-      "destination": "/assets/:path*"
+      "destination": "/client/assets/:path*"
+    },
+    {
+      "source": "/client/:path*",
+      "destination": "/client/:path*"
     },
     {
       "source": "/api/:path*",

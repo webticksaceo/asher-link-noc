@@ -9,9 +9,18 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
 
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
-    serverEntryPromise = import("../src/server").then(
-      (m) => (m as { default?: ServerEntry }).default ?? (m as unknown as ServerEntry),
-    );
+    serverEntryPromise = (async () => {
+      try {
+        // Prefer the built server bundle in production
+        // @ts-ignore: dynamic import of built server bundle (no types)
+        const prod = (await import("../dist/server/index.js")) as any;
+        return prod.default ?? (prod as ServerEntry);
+      } catch (e) {
+        // Fallback to source import for local/dev
+        const dev = await import("../src/server");
+        return (dev as { default?: ServerEntry }).default ?? (dev as unknown as ServerEntry);
+      }
+    })();
   }
   return serverEntryPromise;
 }

@@ -10,3 +10,9 @@ declare global {
 }
 
 export {};
+
+// Declaration for the built server bundle so TypeScript doesn't complain
+declare module "../dist/server/index.js" {
+  const value: any;
+  export default value;
+}
