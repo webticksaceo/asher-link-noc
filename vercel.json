@@ -1,5 +1,4 @@
 {
-  "version": 3,
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
   "outputDirectory": "dist/client",
