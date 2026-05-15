@@ -9,7 +9,11 @@ if (!fs.existsSync(manifestPath)) {
 }
 
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-const entry = Object.values(manifest).find((value) => value.isEntry && typeof value.file === 'string');
+const entries = Object.values(manifest).filter((value) => value.isEntry && typeof value.file === 'string');
+const entry =
+  entries.find((value) => typeof value.src === 'string' && value.src.endsWith('/src/main.tsx')) ||
+  entries.find((value) => typeof value.src === 'string' && value.src.endsWith('main.tsx')) ||
+  entries[0];
 
 if (!entry) {
   throw new Error('No entry point found in manifest.');
