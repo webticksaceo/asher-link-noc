@@ -10,8 +10,16 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
     serverEntryPromise = (async () => {
+      // Try the packaged server-entry from @tanstack/react-start first (works in many builds)
       try {
-        // Prefer the built server bundle in production
+        const pkg = await import("@tanstack/react-start/server-entry");
+        return (pkg as { default?: ServerEntry }).default ?? (pkg as unknown as ServerEntry);
+      } catch (e) {
+        // ignore and try the built server bundle next
+      }
+
+      try {
+        // Prefer the built server bundle in production when available
         // @ts-ignore: dynamic import of built server bundle (no types)
         const prod = (await import("../dist/server/index.js")) as any;
         return prod.default ?? (prod as ServerEntry);
@@ -59,6 +67,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         value.forEach((v) => headers.append(key, v));
       }
     });
+
+    if (fullUrl.searchParams.has("debug")) {
+      console.log("SSR debug hit", {
+        path: fullUrl.pathname,
+        query: Object.fromEntries(fullUrl.searchParams.entries()),
+        method: req.method,
+        headers: req.headers,
+      });
+      res.status(200).setHeader("content-type", "text/html; charset=utf-8");
+      res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>SSR Debug</title></head><body><h1>SSR function reached</h1><pre>${JSON.stringify({
+        url: fullUrl.toString(),
+        method: req.method,
+        headers: Object.fromEntries(Object.entries(req.headers).map(([k,v]) => [k, v])),
+      }, null, 2)}</pre></body></html>`);
+      return;
+    }
 
     const fetchRequest = new Request(fullUrl, {
       method: req.method,
