@@ -1,33 +1,11 @@
 {
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
-  "framework": "vite",
-  "outputDirectory": "dist",
+  "outputDirectory": "dist/client",
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/ssr"
-    },
-    {
-      "source": "/:path*",
-      "destination": "/api/ssr"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
-  ],
-  "headers": [
-    {
-      "source": "/assets/:path*",
-      "headers": [
-        {
-          "key": "cache-control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    }
-  ],
-  "functions": {
-    "api/ssr.ts": {
-      "memory": 1024,
-      "maxDuration": 30
-    }
-  }
+  ]
 }

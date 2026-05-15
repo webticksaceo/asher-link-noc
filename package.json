@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "wrangler:dev": "wrangler dev --local --ip 0.0.0.0",
-    "build": "vite build",
+    "build": "vite build && node scripts/generate-client-index.js",
     "build:dev": "vite build --mode development",
     "vercel-build": "npm run build",
     "preview": "vite preview",
