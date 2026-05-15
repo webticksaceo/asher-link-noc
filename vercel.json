@@ -5,14 +5,6 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/assets/:path*",
-      "destination": "/client/assets/:path*"
-    },
-    {
-      "source": "/client/:path*",
-      "destination": "/client/:path*"
-    },
-    {
       "source": "/api/:path*",
       "destination": "/api/ssr"
     },
