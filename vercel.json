@@ -1,11 +1,16 @@
 {
+  "version": 3,
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
   "outputDirectory": "dist/client",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/((?!.*\\.).*)",
-      "destination": "/index.html"
+      "src": "/(.*\\..*)",
+      "dest": "/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
