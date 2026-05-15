@@ -1,6 +1,12 @@
 {
   "version": 2,
   "outputDirectory": "dist/client",
+  "rewrites": [
+    {
+      "source": "/((?!.*\\.).*)",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",
@@ -19,16 +25,6 @@
           "value": "public, max-age=3600"
         }
       ]
-    }
-  ],
-  "routes": [
-    {
-      "src": "^/assets/.*",
-      "dest": "/$0"
-    },
-    {
-      "src": "^/(?!.*\\.).*$",
-      "dest": "/index.html"
     }
   ]
 }
