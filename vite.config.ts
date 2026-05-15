@@ -16,18 +16,6 @@ export default defineConfig({
   vite: {
     build: {
       manifest: true,
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            recharts: ["recharts"],
-            "radix-ui": [
-              "@radix-ui/react-dialog",
-              "@radix-ui/react-dropdown-menu",
-              "@radix-ui/react-select",
-            ],
-          },
-        },
-      },
     },
   },
 });
