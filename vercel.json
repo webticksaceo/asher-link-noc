@@ -1,21 +1,13 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "installCommand": "npm ci",
   "outputDirectory": "dist/client",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build"
-    }
-  ],
   "routes": [
     {
-      "src": "/(.*\\..*)",
-      "dest": "/$1"
+      "src": "^/assets/.*",
+      "dest": "/$0"
     },
     {
-      "src": "/(.*)",
+      "src": "^/(?!.*\\.).*$",
       "dest": "/index.html"
     }
   ]
